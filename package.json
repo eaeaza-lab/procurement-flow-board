@@ -1,0 +1,10 @@
+{
+  "name": "procurement-flow-board",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline synthetic procurement flow board",
+  "scripts": {
+    "test": "node --test test/smoke.test.js"
+  }
+}
