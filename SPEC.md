@@ -17,6 +17,10 @@ A procurement coordinator at a small operations team who needs a quick, offline 
 - Margin and delivery-delay indicators derived from seed data.
 - A sortable/filterable tabular view using TanStack Table.
 
+## Current implementation
+
+The M1 foundation provides a local FastAPI application, a SQLite schema for all five workflow record types, and repeatable synthetic seed records. Read endpoints and derived workflow indicators remain part of later milestones.
+
 ## Explicit non-goals
 
 - Real company, supplier, employee, marketplace, account, or customer data.

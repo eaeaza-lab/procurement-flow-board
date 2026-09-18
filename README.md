@@ -8,18 +8,19 @@ Built by a supervised autonomous agent pipeline (nightshift).
 
 ## Run
 
-The repository starts with a dependency-free smoke check:
+Install the local Python dependencies, then run the API test suite:
 
 ```powershell
-python test/smoke.py
-```
-
-Planned application commands (after M1–M3):
-
-```powershell
+python -m pip install -r requirements.txt
 python -m pytest
-npm install
-npm run dev
 ```
+
+Start the entirely local API with:
+
+```powershell
+python -m uvicorn backend.main:app --reload
+```
+
+The health check is available at `http://127.0.0.1:8000/health`; the API initializes a local SQLite database with repeatable synthetic seed data on startup. The board UI is planned for M3.
 
 All demo records are synthetic. The finished app will run locally with SQLite and will not make runtime network calls.

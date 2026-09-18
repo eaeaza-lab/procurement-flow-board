@@ -1,5 +1,5 @@
 {
   "check": [
-    "python test/smoke.py"
+    "python -m pytest"
   ]
 }
