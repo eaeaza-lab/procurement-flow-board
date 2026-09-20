@@ -21,6 +21,6 @@ Start the entirely local API with:
 python -m uvicorn backend.main:app --reload
 ```
 
-The health check is available at `http://127.0.0.1:8000/health`; the API initializes a local SQLite database with repeatable synthetic seed data on startup. The board UI is planned for M3.
+The health check is available at `http://127.0.0.1:8000/health`; the API initializes a local SQLite database with repeatable synthetic seed data on startup. `GET /requests` lists the requests with local margin and delivery-delay indicators, while `GET /requests/{request_id}` also returns its quotes, approvals, deliveries, and payments. The board UI is planned for M3.
 
 All demo records are synthetic. The finished app will run locally with SQLite and will not make runtime network calls.
