@@ -19,7 +19,7 @@ A procurement coordinator at a small operations team who needs a quick, offline 
 
 ## Current implementation
 
-The M2 API provides a local FastAPI application, a SQLite schema for all five workflow record types, repeatable synthetic seed records, request list/detail reads, linked workflow records, and deterministic margin and delivery-delay indicators. The board UI remains part of later milestones.
+The M3 app provides the local FastAPI and SQLite workflow API plus a Vite/React Kanban board. The board groups synthetic requests across all five procurement stages, searches by synthetic request title or ID, and shows deterministic margin and delivery-delay indicators. Table and request-detail UI work remains part of later milestones.
 
 ## Explicit non-goals
 
