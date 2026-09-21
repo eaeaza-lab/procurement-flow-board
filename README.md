@@ -29,7 +29,7 @@ Then start the Vite board in another:
 npm run dev
 ```
 
-Open the local address Vite prints (normally `http://127.0.0.1:5173`). The board fetches from the companion API through Vite's local-only proxy. It groups requests by stage, supports title/ID search, and flags late deliveries or low projected margins.
+Open the local address Vite prints (normally `http://127.0.0.1:5173`). The board fetches from the companion API through Vite's local-only proxy. It groups requests by stage, supports title/ID search and stage filtering, flags late deliveries or low projected margins, and includes a sortable TanStack Table. Select “View details” from a card or table row to inspect its local quotes, approvals, deliveries, and payments.
 
 The health check is available at `http://127.0.0.1:8000/health`; the API initializes a local SQLite database with repeatable synthetic seed data on startup. `GET /requests` lists the requests with local margin and delivery-delay indicators, while `GET /requests/{request_id}` also returns its quotes, approvals, deliveries, and payments.
 

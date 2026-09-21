@@ -1,104 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
+import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
+import { fetchRequestDetail, fetchRequests } from './api.js';
 
-import { fetchRequests } from './api.js';
-
-export const STAGES = [
-  { id: 'requested', label: 'Requested' },
-  { id: 'quoted', label: 'Quoted' },
-  { id: 'approved', label: 'Approved' },
-  { id: 'delivered', label: 'Delivered' },
-  { id: 'paid', label: 'Paid' },
-];
-
-export function formatCurrency(cents) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
-function statusLabel(request) {
-  if (request.is_delivery_delayed) return `${request.delivery_delay_days}d late`;
-  if (request.margin_percent !== null && request.margin_percent < 20) return 'Low margin';
-  return 'On track';
-}
-
-function RequestCard({ request }) {
-  const lowMargin = request.margin_percent !== null && request.margin_percent < 20;
-  const status = statusLabel(request);
-
-  return (
-    <article className="request-card" aria-label={request.title}>
-      <div className="card-title-row">
-        <h3>{request.title}</h3>
-        <span className={`indicator ${request.is_delivery_delayed ? 'is-late' : lowMargin ? 'is-risk' : 'is-ok'}`}>
-          {status}
-        </span>
-      </div>
-      <p className="request-id">{request.id}</p>
-      <dl className="metrics">
-        <div><dt>Margin</dt><dd>{formatCurrency(request.margin_cents)}</dd></div>
-        <div><dt>Margin rate</dt><dd>{request.margin_percent === null ? '—' : `${request.margin_percent}%`}</dd></div>
-      </dl>
-    </article>
-  );
-}
+export const STAGES = [{ id: 'requested', label: 'Requested' }, { id: 'quoted', label: 'Quoted' }, { id: 'approved', label: 'Approved' }, { id: 'delivered', label: 'Delivered' }, { id: 'paid', label: 'Paid' }];
+export function formatCurrency(cents) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(cents / 100); }
+function statusLabel(request) { if (request.is_delivery_delayed) return `${request.delivery_delay_days}d late`; return request.margin_percent !== null && request.margin_percent < 20 ? 'Low margin' : 'On track'; }
+function RequestCard({ request, onSelect }) { const lowMargin = request.margin_percent !== null && request.margin_percent < 20; return <article className="request-card" aria-label={request.title}><div className="card-title-row"><h3>{request.title}</h3><span className={`indicator ${request.is_delivery_delayed ? 'is-late' : lowMargin ? 'is-risk' : 'is-ok'}`}>{statusLabel(request)}</span></div><p className="request-id">{request.id}</p><dl className="metrics"><div><dt>Margin</dt><dd>{formatCurrency(request.margin_cents)}</dd></div><div><dt>Margin rate</dt><dd>{request.margin_percent === null ? '—' : `${request.margin_percent}%`}</dd></div></dl><button className="detail-trigger" type="button" onClick={() => onSelect(request.id)}>View details</button></article>; }
+function LinkedRecords({ title, records, fields }) { return <section className="linked-records" aria-label={title}><h3>{title}</h3>{records.length === 0 ? <p>None recorded</p> : <ul>{records.map((record) => <li key={record.id}>{fields.map(({ key, label }) => `${label}: ${record[key] ?? '—'}`).join(' · ')}</li>)}</ul>}</section>; }
+function RequestDetail({ request, loading, error, onClose }) { if (!request && !loading && !error) return null; return <aside className="detail-panel" aria-label="Request detail" aria-live="polite"><div className="detail-heading"><h2>Request detail</h2><button type="button" onClick={onClose}>Close</button></div>{loading && <p>Loading linked workflow records…</p>}{error && <p role="alert" className="error">{error}</p>}{request && <><p><strong>{request.title}</strong> <span className="request-id">{request.id}</span></p><dl className="detail-metrics"><div><dt>Stage</dt><dd>{request.stage}</dd></div><div><dt>Projected margin</dt><dd>{formatCurrency(request.margin_cents)} ({request.margin_percent ?? '—'}%)</dd></div><div><dt>Delivery delay</dt><dd>{request.delivery_delay_days} days</dd></div></dl><LinkedRecords title="Quotes" records={request.quotes} fields={[{ key: 'quoted_cost_cents', label: 'Cost (cents)' }, { key: 'valid_until', label: 'Valid until' }]} /><LinkedRecords title="Approvals" records={request.approvals} fields={[{ key: 'state', label: 'State' }, { key: 'decided_on', label: 'Decided' }]} /><LinkedRecords title="Deliveries" records={request.deliveries} fields={[{ key: 'state', label: 'State' }, { key: 'due_on', label: 'Due' }, { key: 'delivered_on', label: 'Received' }]} /><LinkedRecords title="Payments" records={request.payments} fields={[{ key: 'amount_cents', label: 'Amount (cents)' }, { key: 'state', label: 'State' }, { key: 'paid_on', label: 'Paid' }]} /></>}</aside>; }
 
 export default function App() {
-  const [requests, setRequests] = useState([]);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let active = true;
-    fetchRequests()
-      .then((items) => active && setRequests(items))
-      .catch((reason) => active && setError(reason.message))
-      .finally(() => active && setLoading(false));
-    return () => { active = false; };
-  }, []);
-
-  const filteredRequests = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return requests;
-    return requests.filter(({ id, title }) =>
-      `${id} ${title}`.toLowerCase().includes(normalizedQuery),
-    );
-  }, [query, requests]);
-
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">Local demo workspace</p>
-          <h1>Procurement flow</h1>
-        </div>
-        <label className="search-label" htmlFor="request-search">
-          <span>Search requests</span>
-          <input id="request-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Title or request ID" />
-        </label>
-      </header>
-
-      {loading && <p role="status" className="message">Loading local requests…</p>}
-      {error && <p role="alert" className="message error">{error}</p>}
-      {!loading && !error && (
-        <section className="board" aria-label="Procurement stages">
-          {STAGES.map((stage) => {
-            const cards = filteredRequests.filter((request) => request.stage === stage.id);
-            return (
-              <section className="stage-column" key={stage.id} aria-labelledby={`${stage.id}-heading`}>
-                <header><h2 id={`${stage.id}-heading`}>{stage.label}</h2><span aria-label={`${cards.length} requests`}>{cards.length}</span></header>
-                <div className="card-stack">
-                  {cards.map((request) => <RequestCard key={request.id} request={request} />)}
-                  {cards.length === 0 && <p className="empty-stage">No matching requests</p>}
-                </div>
-              </section>
-            );
-          })}
-        </section>
-      )}
-    </main>
-  );
+  const [requests, setRequests] = useState([]); const [query, setQuery] = useState(''); const [stageFilter, setStageFilter] = useState(''); const [sorting, setSorting] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [detail, setDetail] = useState(null); const [detailLoading, setDetailLoading] = useState(false); const [detailError, setDetailError] = useState('');
+  useEffect(() => { let active = true; fetchRequests().then((items) => active && setRequests(items)).catch((reason) => active && setError(reason.message)).finally(() => active && setLoading(false)); return () => { active = false; }; }, []);
+  const selectRequest = (requestId) => { setDetail(null); setDetailError(''); setDetailLoading(true); fetchRequestDetail(requestId).then(setDetail).catch((reason) => setDetailError(reason.message)).finally(() => setDetailLoading(false)); };
+  const filteredRequests = useMemo(() => { const normalized = query.trim().toLowerCase(); return requests.filter((request) => (!normalized || `${request.id} ${request.title}`.toLowerCase().includes(normalized)) && (!stageFilter || request.stage === stageFilter)); }, [query, requests, stageFilter]);
+  const columns = useMemo(() => [{ accessorKey: 'id', header: 'Request ID' }, { accessorKey: 'title', header: 'Title' }, { accessorKey: 'stage', header: 'Stage' }, { accessorKey: 'margin_cents', header: 'Margin', cell: ({ getValue }) => formatCurrency(getValue()) }, { accessorKey: 'margin_percent', header: 'Margin rate', cell: ({ getValue }) => getValue() === null ? '—' : `${getValue()}%` }, { id: 'details', header: 'Details', enableSorting: false, cell: ({ row }) => <button type="button" onClick={() => selectRequest(row.original.id)}>View details</button> }], []);
+  const table = useReactTable({ data: filteredRequests, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel() });
+  return <main className="app-shell"><header className="app-header"><div><p className="eyebrow">Local demo workspace</p><h1>Procurement flow</h1></div><label className="search-label" htmlFor="request-search"><span>Search requests</span><input id="request-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Title or request ID" /></label><label className="search-label" htmlFor="stage-filter"><span>Filter stage</span><select id="stage-filter" value={stageFilter} onChange={(event) => setStageFilter(event.target.value)}><option value="">All stages</option>{STAGES.map((stage) => <option key={stage.id} value={stage.id}>{stage.label}</option>)}</select></label></header>{loading && <p role="status" className="message">Loading local requests…</p>}{error && <p role="alert" className="message error">{error}</p>}{!loading && !error && <><section className="board" aria-label="Procurement stages">{STAGES.map((stage) => { const cards = filteredRequests.filter((request) => request.stage === stage.id); return <section className="stage-column" key={stage.id} aria-labelledby={`${stage.id}-heading`}><header><h2 id={`${stage.id}-heading`}>{stage.label}</h2><span aria-label={`${cards.length} requests`}>{cards.length}</span></header><div className="card-stack">{cards.map((request) => <RequestCard key={request.id} request={request} onSelect={selectRequest} />)}{cards.length === 0 && <p className="empty-stage">No matching requests</p>}</div></section>; })}</section><section className="request-table-section" aria-labelledby="request-table-heading"><h2 id="request-table-heading">Request table</h2><table><thead>{table.getHeaderGroups().map((group) => <tr key={group.id}>{group.headers.map((header) => <th key={header.id} scope="col">{header.isPlaceholder ? null : header.column.getCanSort() ? <button type="button" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{header.column.getIsSorted() === 'asc' ? ' ↑' : header.column.getIsSorted() === 'desc' ? ' ↓' : ''}</button> : flexRender(header.column.columnDef.header, header.getContext())}</th>)}</tr>)}</thead><tbody>{table.getRowModel().rows.map((row) => <tr key={row.id}>{row.getVisibleCells().map((cell) => <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>)}</tbody></table>{table.getRowModel().rows.length === 0 && <p>No requests match these filters.</p>}</section></>}<RequestDetail request={detail} loading={detailLoading} error={detailError} onClose={() => { setDetail(null); setDetailError(''); }} /></main>;
 }

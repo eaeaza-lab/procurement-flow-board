@@ -19,7 +19,7 @@ A procurement coordinator at a small operations team who needs a quick, offline 
 
 ## Current implementation
 
-The M3 app provides the local FastAPI and SQLite workflow API plus a Vite/React Kanban board. The board groups synthetic requests across all five procurement stages, searches by synthetic request title or ID, and shows deterministic margin and delivery-delay indicators. Table and request-detail UI work remains part of later milestones.
+The M4 app provides the local FastAPI and SQLite workflow API plus a Vite/React Kanban board and request table. The board groups synthetic requests across all five procurement stages, searches by synthetic request title or ID, and shows deterministic margin and delivery-delay indicators. The TanStack Table supports stage filtering and sortable columns, while an on-demand detail panel shows linked local quotes, approvals, deliveries, and payments.
 
 ## Explicit non-goals
 
