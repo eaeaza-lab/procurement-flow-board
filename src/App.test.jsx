@@ -48,6 +48,21 @@ describe('Procurement board', () => {
     expect(screen.getByRole('table')).not.toHaveTextContent('Request-Aster');
     await user.click(screen.getAllByRole('button', { name: 'View details' })[0]);
     expect(await screen.findByLabelText('Request detail')).toHaveTextContent('Quotes');
+    expect(screen.getByRole('button', { name: 'Close details' })).toHaveFocus();
     expect(fetchRequestDetail).toHaveBeenCalledWith('req-birch');
+  });
+
+  it('offers recovery for a loading failure and empty search results', async () => {
+    const user = userEvent.setup();
+    fetchRequests.mockReset();
+    fetchRequests.mockRejectedValueOnce(new Error('Local data is unavailable.')).mockResolvedValueOnce(requests);
+    render(<App />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Local data is unavailable.');
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await screen.findAllByText('Request-Aster');
+    await user.type(screen.getByRole('searchbox', { name: 'Search requests' }), 'missing');
+    expect(await screen.findByRole('heading', { name: 'No requests found' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getAllByText('Request-Aster')[0]).toBeInTheDocument();
   });
 });
