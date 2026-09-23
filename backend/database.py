@@ -85,6 +85,19 @@ def connect(database_path: str | Path = DEFAULT_DATABASE_PATH) -> sqlite3.Connec
     return connection
 
 
+def reset_demo_data(database_path: str | Path = DEFAULT_DATABASE_PATH) -> None:
+    """Discard all local records and restore the fixed synthetic sample set."""
+
+    database_path = Path(database_path)
+    database_path.parent.mkdir(parents=True, exist_ok=True)
+    with connect(database_path) as connection:
+        connection.executescript(SCHEMA)
+        # Children first so foreign keys stay satisfied while clearing.
+        for table in reversed(list(SEED_ROWS)):
+            connection.execute(f"DELETE FROM {table}")
+    initialize_database(database_path)
+
+
 def initialize_database(database_path: str | Path = DEFAULT_DATABASE_PATH) -> None:
     """Create the schema and insert the fixed synthetic sample set exactly once."""
 

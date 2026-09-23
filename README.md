@@ -1,6 +1,6 @@
 # Procurement Flow Board
 
-Status: **polish in progress**
+Status: **candidate**
 
 An offline procurement-workflow demo: synthetic purchase requests move through supplier quotes, approvals, delivery, and payment on a searchable Kanban board. It is intended as a showcase, practical tool experiment, learning project, and possible SaaS foundation.
 
@@ -32,5 +32,25 @@ npm run dev
 Open the local address Vite prints (normally `http://127.0.0.1:5173`). The board fetches from the companion API through Vite's local-only proxy. It groups requests by stage, supports title/ID search and stage filtering, flags late deliveries or low projected margins, and includes a sortable TanStack Table. Select "View details" from a card or table row to inspect its local quotes, approvals, deliveries, and payments. Loading and error states include retry actions; empty search results can clear filters. Keyboard users can use the skip link, visible focus states, and the focused detail close control. On narrow screens, the board and table scroll horizontally to preserve workflow context.
 
 The health check is available at `http://127.0.0.1:8000/health`; the API initializes a local SQLite database with repeatable synthetic seed data on startup. `GET /requests` lists the requests with local margin and delivery-delay indicators, while `GET /requests/{request_id}` also returns its quotes, approvals, deliveries, and payments.
+
+## Lint and demo reset
+
+```powershell
+npm run lint
+python -m backend.reset_demo
+```
+
+`reset_demo` clears the local SQLite workflow tables and restores the fixed synthetic seed data (optionally pass a database path).
+
+## Demo
+
+Sample output of `python -m backend.reset_demo`, then `GET /requests` (abridged):
+
+```text
+Reset ...procurement_flow.db with 11 synthetic records.
+Request-Aster   quoted     margin 240.00 (33.33%)  delay 0d
+Request-Birch   approved   margin 570.00 (32.02%)  delay 0d
+Request-Cinder  requested  margin 230.00 (38.98%)  delay 0d
+```
 
 All demo records are synthetic. The finished app will run locally with SQLite and will not make runtime network calls.
